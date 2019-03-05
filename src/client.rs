@@ -53,7 +53,10 @@ impl Client {
 
     /// Fetch credentials, sign the request and dispatch it.
     pub fn sign_and_dispatch<T, E>(&self, request: SignedRequest, response_handler: fn(HttpResponse) -> Box<Future<Item=T, Error=E> + Send>) -> RusotoFuture<T, E> {
-        future::new(self.inner.sign_and_dispatch(request), response_handler)
+        println("enter Client::sign_and_dispatch");
+        let res = future::new(self.inner.sign_and_dispatch(request), response_handler);
+        println("leave Client::sign_and_dispatch");
+        res
     }
 }
 
@@ -92,11 +95,14 @@ impl<P, D> SignAndDispatch for ClientInner<P, D>
           D::Future: Send
 {
     fn sign_and_dispatch(&self, request: SignedRequest) -> Box<TimeoutFuture<Item=HttpResponse, Error=SignAndDispatchError> + Send> {
-        Box::new(SignAndDispatchFuture {
+        println!("enter SignAndDispatch::sign_and_dispatch");
+        let result = Box::new(SignAndDispatchFuture {
             inner: self.clone(),
             state: Some(SignAndDispatchState::Lazy { request: request }),
             timeout: None
-        })
+        });
+        println!("leave SignAndDispatch::sign_and_dispatch");
+        result
     }
 }
 
@@ -133,7 +139,8 @@ impl<P, D> Future for SignAndDispatchFuture<P, D>
     type Error = SignAndDispatchError;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        match self.state.take().unwrap() {
+        println("enter SignAndDispatchState::poll");
+        let result = match self.state.take().unwrap() {
             SignAndDispatchState::Lazy { request } => {
                 let future = self.inner.credentials_provider.credentials();
                 self.state = Some(SignAndDispatchState::FetchingCredentials {
@@ -176,7 +183,9 @@ impl<P, D> Future for SignAndDispatchFuture<P, D>
                     }
                 }
             }
-        }
+        };
+        println("leave SignAndDispatchState::poll");
+        result
     }
 }
 
