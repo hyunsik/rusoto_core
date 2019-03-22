@@ -60,7 +60,10 @@ impl Client {
         request: SignedRequest,
         response_handler: fn(HttpResponse) -> Box<Future<Item = T, Error = E> + Send>,
     ) -> RusotoFuture<T, E> {
-        future::new(self.inner.sign_and_dispatch(request), response_handler)
+        println!("Enter Client::sign_and_dispatch");
+        let x = future::new(self.inner.sign_and_dispatch(request), response_handler);
+        println!("Leave Client::sign_and_dispatch");
+        return x;
     }
 }
 
@@ -106,11 +109,14 @@ where
         &self,
         request: SignedRequest,
     ) -> Box<TimeoutFuture<Item = HttpResponse, Error = SignAndDispatchError> + Send> {
-        Box::new(SignAndDispatchFuture {
+        println!("Enter SignAndDispatch::sign_and_dispatch");
+        let x = Box::new(SignAndDispatchFuture {
             inner: self.clone(),
             state: Some(SignAndDispatchState::Lazy { request: request }),
             timeout: None,
-        })
+        });
+        println!("Leave SignAndDispatch::sign_and_dispatch");
+        return x;
     }
 }
 
